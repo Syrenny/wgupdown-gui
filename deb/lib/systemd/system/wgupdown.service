@@ -1,0 +1,16 @@
+[Unit]
+Description=wgupdown WireGuard manager (bring up/down interface)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/wgupdown/wgupdown.env
+ExecStart=/usr/bin/wg-quick up $WG_INTERFACE
+ExecStop=/usr/bin/wg-quick down $WG_INTERFACE
+TimeoutStartSec=60
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+systemctl daemon-reload
+systemctl enable wgupdown.service
+
+echo "-------------------------------------------------"
+echo "wgupdown-gui installed."
+echo "-------------------------------------------------"
+
+exit 0

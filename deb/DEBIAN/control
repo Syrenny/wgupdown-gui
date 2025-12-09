@@ -1,0 +1,8 @@
+Package: wgupdown
+Version: 0.0.1
+Section: net
+Priority: optional
+Architecture: amd64
+Depends: wireguard, systemd
+Maintainer: Syrenny https://github.com/Syrenny
+Description: Simple VPN manager with GUI and autostart
