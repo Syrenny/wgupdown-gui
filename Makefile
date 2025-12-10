@@ -5,6 +5,7 @@ DEB_DIR := deb
 DEB_OUTPUT := $(DEB_DIR)/$(PACKAGE_NAME)_$(VERSION)_amd64.deb
 BIN_DIR := bin
 BINARY := $(BIN_DIR)/$(PACKAGE_NAME)
+BINARY_CTL := $(BIN_DIR)/wgupdown
 
 .PHONY: help all build deb lint fmt clean
 
@@ -16,14 +17,17 @@ all: build deb ## Build binary and .deb package
 ##@ Build
 build: fmt lint ## Build binary
 	@mkdir -p $(BIN_DIR)
+	go build -ldflags="-X wgupdown/internal/version.Version=$(VERSION)" -o $(BINARY_CTL) ./cmd/wgupdown
 	go build -ldflags="-X wgupdown/internal/version.Version=$(VERSION)" -o $(BINARY) ./cmd/$(PACKAGE_NAME)
+
 
 ##@ Debian package
 deb: build ## Build .deb package
 	# Ensure maintainer scripts have correct permissions
-	chmod 755 $(DEB_DIR)/DEBIAN/postinst $(DEB_DIR)/DEBIAN/prerm
+	chmod 755 $(DEB_DIR)/DEBIAN/postinst $(DEB_DIR)/DEBIAN/postrm
 	sed -i "s/^Version:.*/Version: $(VERSION)/" $(DEB_DIR)/DEBIAN/control
-	# Copy binary to deb structure
+	# Copy binaries to deb structure
+	cp $(BINARY_CTL) $(DEB_DIR)/usr/local/bin/
 	cp $(BINARY) $(DEB_DIR)/usr/local/bin/
 	# Build package
 	dpkg-deb --build $(DEB_DIR) $(DEB_OUTPUT)

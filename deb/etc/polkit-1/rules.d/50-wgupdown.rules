@@ -1,0 +1,13 @@
+polkit.addRule(function(action, subject) {
+    if (!subject.isInGroup || !subject.isInGroup("wgupdown")) return;
+
+    // Only allow activate/deactivate/list
+    const allowed_actions = [
+        "com.example.wg.manage.activate",
+        "com.example.wg.manage.deactivate",
+        "com.example.wg.manage.list"
+    ];
+    if (allowed_actions.indexOf(action.id) !== -1) {
+        return polkit.Result.YES;
+    }
+});

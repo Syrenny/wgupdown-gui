@@ -1,11 +1,23 @@
 #!/bin/bash
 set -e
 
-systemctl daemon-reload
-systemctl enable wgupdown.service
+# Create wgupdown group if it doesn't exist
+if ! getent group wgupdown >/dev/null; then
+    groupadd wgupdown
+fi
+
+# Fix permissions on binary
+chown root:wgupdown /usr/local/bin/wgupdown
+chmod 750 /usr/local/bin/wgupdown
+
+if ! id -nG "$SUDO_USER" | grep -qw wgupdown; then
+    usermod -aG wgupdown "$SUDO_USER"
+    echo "User $SUDO_USER added to wgupdown group."
+fi
 
 echo "-------------------------------------------------"
 echo "wgupdown-gui installed."
+echo "Please log out and log back in for changes to take effect."
 echo "-------------------------------------------------"
 
 exit 0

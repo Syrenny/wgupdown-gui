@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+# Remove wgupdown group
+if getent group wgupdown >/dev/null; then
+    groupdel wgupdown
+fi
+
+exit 0

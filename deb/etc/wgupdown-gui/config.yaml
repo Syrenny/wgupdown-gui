@@ -1,2 +1,2 @@
-cli:
+wireguard:
     interface: wg0
