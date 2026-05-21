@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log"
+	"time"
 
 	wgupdowngui "github.com/Syrenny/wgupdown-gui"
 	"github.com/Syrenny/wgupdown-gui/config"
@@ -17,13 +18,15 @@ type SystrayApp interface {
 
 type SystrayAppImpl struct {
 	ctx      context.Context
+	cancel   context.CancelFunc
 	cfg      config.Config
 	services *service.Services
 }
 
-func NewSystrayApp(ctx context.Context, cfg config.Config, services *service.Services) *SystrayAppImpl {
+func NewSystrayApp(ctx context.Context, cancel context.CancelFunc, cfg config.Config, services *service.Services) *SystrayAppImpl {
 	return &SystrayAppImpl{
 		ctx:      ctx,
+		cancel:   cancel,
 		cfg:      cfg,
 		services: services,
 	}
@@ -38,7 +41,7 @@ func (s *SystrayAppImpl) OnReady() {
 	}
 
 	// menu
-	toggle := systray.AddMenuItem("Toggle VPN", "Toggle VPN up/down")
+	toggle := systray.AddMenuItem("Checking VPN...", "Toggle WireGuard state")
 
 	// update menu text according to current state initially
 	err = s.services.Gui.UpdateToggleText(toggle)
@@ -49,11 +52,6 @@ func (s *SystrayAppImpl) OnReady() {
 	// run goroutine to handle clicks
 	go func() {
 		for range toggle.ClickedCh {
-			err := s.services.Gui.UpdateToggleText(toggle)
-			if err != nil {
-				s.services.Gui.ShowErr(err)
-			}
-
 			err = s.services.Gui.HandleToggle(toggle)
 			if err != nil {
 				s.services.Gui.ShowErr(err)
@@ -65,8 +63,26 @@ func (s *SystrayAppImpl) OnReady() {
 			}
 		}
 	}()
+
+	go func() {
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+			case <-ticker.C:
+				if err := s.services.Gui.UpdateToggleText(toggle); err != nil {
+					log.Printf("failed to refresh tray state: %v", err)
+				}
+			}
+		}
+	}()
 }
 
 func (s *SystrayAppImpl) OnExit() {
-	// Implementation for tray exit event
+	if s.cancel != nil {
+		s.cancel()
+	}
 }

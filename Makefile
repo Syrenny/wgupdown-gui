@@ -5,7 +5,10 @@ DEB_DIR := deb
 DEB_OUTPUT := $(DEB_DIR)/$(PACKAGE_NAME)_$(VERSION)_amd64.deb
 BIN_DIR := bin
 BINARY := $(BIN_DIR)/$(PACKAGE_NAME)
-BINARY_CTL := $(BIN_DIR)/wgupdown
+HELPER_BINARY := $(BIN_DIR)/wgupdown
+GO ?= $(shell command -v go 2>/dev/null || echo /usr/local/go/bin/go)
+GOFMT ?= $(shell command -v gofmt 2>/dev/null || echo /usr/local/go/bin/gofmt)
+GOLANGCI_LINT ?= $(shell command -v golangci-lint 2>/dev/null)
 
 .PHONY: help all build deb lint fmt clean
 
@@ -17,28 +20,37 @@ all: build deb ## Build binary and .deb package
 ##@ Build
 build: fmt lint ## Build binary
 	@mkdir -p $(BIN_DIR)
-	go build -ldflags="-X wgupdown/internal/version.Version=$(VERSION)" -o $(BINARY_CTL) ./cmd/wgupdown
-	go build -ldflags="-X wgupdown/internal/version.Version=$(VERSION)" -o $(BINARY) ./cmd/$(PACKAGE_NAME)
+	$(GO) build -ldflags="-X github.com/Syrenny/wgupdown-gui/internal/version.Version=$(VERSION)" -o $(HELPER_BINARY) ./cmd/wgupdown
+	$(GO) build -ldflags="-X github.com/Syrenny/wgupdown-gui/internal/version.Version=$(VERSION)" -o $(BINARY) ./cmd/$(PACKAGE_NAME)
 
 
 ##@ Debian package
 deb: build ## Build .deb package
 	# Ensure maintainer scripts have correct permissions
 	chmod 755 $(DEB_DIR)/DEBIAN/postinst $(DEB_DIR)/DEBIAN/postrm
+	find $(DEB_DIR)/etc -type d -exec chmod 755 {} +
+	find $(DEB_DIR)/etc -type f -exec chmod 644 {} +
+	find $(DEB_DIR)/etc/sudoers.d -type f -exec chmod 440 {} +
 	sed -i "s/^Version:.*/Version: $(VERSION)/" $(DEB_DIR)/DEBIAN/control
 	# Copy binaries to deb structure
-	cp $(BINARY_CTL) $(DEB_DIR)/usr/local/bin/
+	rm -f $(DEB_DIR)/usr/local/bin/wgupdown $(DEB_DIR)/usr/local/bin/wgupdown-gui
+	cp $(HELPER_BINARY) $(DEB_DIR)/usr/local/bin/
 	cp $(BINARY) $(DEB_DIR)/usr/local/bin/
+	rm -f $(DEB_DIR)/usr/local/bin/.gitkeep
 	# Build package
-	dpkg-deb --build $(DEB_DIR) $(DEB_OUTPUT)
+	dpkg-deb --root-owner-group --build $(DEB_DIR) $(DEB_OUTPUT)
 	@echo "Built package: $(DEB_OUTPUT)"
 
 ##@ Lint & fmt
 lint: ## Run golangci-lint
-	golangci-lint run ./...
+ifneq ($(strip $(GOLANGCI_LINT)),)
+	$(GOLANGCI_LINT) run ./...
+else
+	@echo "golangci-lint not found; skipping lint"
+endif
 
 fmt: ## Format Go code
-	go fmt ./...
+	$(GOFMT) -w $$(find . -name '*.go' -not -path './vendor/*')
 
 ##@ Clean
 clean: ## Remove build artifacts

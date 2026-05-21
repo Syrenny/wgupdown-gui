@@ -9,7 +9,7 @@ import (
 )
 
 func Run(cfg config.Config) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	deps := service.ServicesDependencies{
 		Ctx: ctx,
@@ -18,7 +18,7 @@ func Run(cfg config.Config) {
 	services := service.NewServices(deps)
 
 	// Run systray
-	systray_app := NewSystrayApp(ctx, cfg, services)
+	systrayApp := NewSystrayApp(ctx, cancel, cfg, services)
 
-	systray.Run(systray_app.OnReady, systray_app.OnExit)
+	systray.Run(systrayApp.OnReady, systrayApp.OnExit)
 }

@@ -4,60 +4,42 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"strings"
+
+	"github.com/Syrenny/wgupdown-gui/pkg/wireguard"
 )
 
 const (
-	pkexecPath   = "/usr/bin/pkexec"
-	wgupdownPath = "/usr/local/bin/wgupdown"
+	sudoPath       = "/usr/bin/sudo"
+	wgupdownPath   = "/usr/local/bin/wgupdown"
+	nonInteractive = "-n"
 )
 
-// Up brings the WireGuard interface up using `wgupdown` utility
-func Up(ctx context.Context, ifaceName string) error {
-	cmd := exec.CommandContext(ctx, pkexecPath, wgupdownPath, "up", ifaceName)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func runHelper(ctx context.Context, action string, ifaceName string) error {
+	cmd := exec.CommandContext(ctx, sudoPath, nonInteractive, wgupdownPath, action, ifaceName)
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("wgupdown up failed: %w", err)
-	}
-	return nil
-}
-
-// Down brings the WireGuard interface down using `wgupdown` utility
-func Down(ctx context.Context, ifaceName string) error {
-	cmd := exec.CommandContext(ctx, pkexecPath, wgupdownPath, "down", ifaceName)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("wgupdown down failed: %w", err)
-	}
-	return nil
-}
-
-// IsUp checks if the interface is up using `wgupdown` utility
-func IsUp(ctx context.Context, ifaceName string) (bool, error) {
-	cmd := exec.CommandContext(ctx, pkexecPath, wgupdownPath, "status", ifaceName)
-	var out bytes.Buffer
 	var stderr bytes.Buffer
-	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return false, fmt.Errorf("wgupdown status failed: %w, stderr: %s", err, stderr.String())
+		if stderr.Len() > 0 {
+			return fmt.Errorf("wgupdown %s %s failed: %w: %s", action, ifaceName, err, stderr.String())
+		}
+
+		return fmt.Errorf("wgupdown %s %s failed: %w", action, ifaceName, err)
 	}
 
-	statusStr := strings.TrimSpace(out.String())
+	return nil
+}
 
-	switch statusStr {
-	case "up":
-		return true, nil
-	case "down":
-		return false, nil
-	default:
-		return false, fmt.Errorf("unexpected output from wgupdown: %q", statusStr)
-	}
+func Up(ctx context.Context, ifaceName string) error {
+	return runHelper(ctx, "up", ifaceName)
+}
+
+func Down(ctx context.Context, ifaceName string) error {
+	return runHelper(ctx, "down", ifaceName)
+}
+
+func IsUp(ctx context.Context, ifaceName string) (bool, error) {
+	return wireguard.IsUp(ctx, ifaceName)
 }

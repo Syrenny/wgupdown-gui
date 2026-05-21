@@ -29,8 +29,7 @@ type Gui interface {
 }
 
 type Services struct {
-	WgUpDown WgUpDown
-	Gui      Gui
+	Gui Gui
 }
 
 type ServicesDependencies struct {
@@ -40,7 +39,6 @@ type ServicesDependencies struct {
 
 func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
-		WgUpDown: NewWgUpDownService(deps.Ctx),
-		Gui:      NewGuiService(deps.Ctx, deps.Cfg),
+		Gui: NewGuiService(deps.Ctx, deps.Cfg),
 	}
 }

@@ -48,9 +48,11 @@ func (s *GuiService) UpdateToggleText(toggle *systray.MenuItem) error {
 		return err
 	}
 	if up {
-		toggle.SetTitle("Disable VPN")
+		toggle.SetTitle(fmt.Sprintf("Disable VPN (%s)", s.cfg.Wireguard.Interface))
+		systray.SetTooltip(fmt.Sprintf("%s is connected", s.cfg.Wireguard.Interface))
 	} else {
-		toggle.SetTitle("Enable VPN")
+		toggle.SetTitle(fmt.Sprintf("Enable VPN (%s)", s.cfg.Wireguard.Interface))
+		systray.SetTooltip(fmt.Sprintf("%s is disconnected", s.cfg.Wireguard.Interface))
 	}
 	return nil
 }
