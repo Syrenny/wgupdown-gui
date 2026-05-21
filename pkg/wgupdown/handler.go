@@ -40,6 +40,10 @@ func Down(ctx context.Context, ifaceName string) error {
 	return runHelper(ctx, "down", ifaceName)
 }
 
+func Toggle(ctx context.Context, ifaceName string) error {
+	return runHelper(ctx, "toggle", ifaceName)
+}
+
 func IsUp(ctx context.Context, ifaceName string) (bool, error) {
 	return wireguard.IsUp(ctx, ifaceName)
 }

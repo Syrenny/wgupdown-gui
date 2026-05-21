@@ -40,8 +40,15 @@ func (s *SystrayAppImpl) OnReady() {
 		systray.SetIcon(iconData)
 	}
 
+	if err := ensureToggleShortcut(s.ctx, s.cfg.Wireguard.Interface); err != nil {
+		log.Printf("failed to configure shortcut: %v", err)
+	}
+
 	// menu
 	toggle := systray.AddMenuItem("Checking VPN...", "Toggle WireGuard state")
+	systray.AddSeparator()
+	shortcutInfo := systray.AddMenuItem(shortcutDescription, "Global shortcut for VPN toggle")
+	shortcutInfo.Disable()
 
 	// update menu text according to current state initially
 	err = s.services.Gui.UpdateToggleText(toggle)

@@ -11,7 +11,7 @@ import (
 func main() {
 	ctx := context.Background()
 	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "usage: %s <up|down|status> <iface>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage: %s <up|down|toggle|status> <iface>\n", os.Args[0])
 		os.Exit(2)
 	}
 
@@ -26,6 +26,11 @@ func main() {
 		}
 	case "down":
 		if err := wireguard.Down(ctx, ifaceName); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	case "toggle":
+		if err := wireguard.Toggle(ctx, ifaceName); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}

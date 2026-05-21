@@ -48,6 +48,20 @@ func Down(ctx context.Context, ifaceName string) error {
 	return runWGQuick(ctx, "down", ifaceName)
 }
 
+// Toggle brings the interface down if it is up, and up if it is down.
+func Toggle(ctx context.Context, ifaceName string) error {
+	up, err := IsUp(ctx, ifaceName)
+	if err != nil {
+		return err
+	}
+
+	if up {
+		return Down(ctx, ifaceName)
+	}
+
+	return Up(ctx, ifaceName)
+}
+
 // IsUp checks if the interface exists in /sys/class/net.
 func IsUp(_ context.Context, ifaceName string) (bool, error) {
 	if err := validateInterfaceName(ifaceName); err != nil {
